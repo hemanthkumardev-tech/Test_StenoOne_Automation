@@ -9,5 +9,9 @@ node_modules/
 
 # Environment variables and secrets
 .ev
-.env
 dashboard-debug.png
+node_modules/
+.env
+.auth/
+playwright-report/
+test-results/
