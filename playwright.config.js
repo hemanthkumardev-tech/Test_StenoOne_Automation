@@ -1,48 +1,51 @@
 
+// @ts-check
+const { defineConfig, devices } = require('@playwright/test');
 require('dotenv').config({ override: true });
 
-// Set once in the runner process so restarted workers reuse the same test data names.
-process.env.TEST_RUN_ID ??= String(Date.now());
-
-const { defineConfig, devices } = require('@playwright/test');
-
 module.exports = defineConfig({
+
     testDir: './tests',
-    fullyParallel: true,
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
-    reporter: 'list',
+
+    timeout: 30 * 1000,
+
+    expect: {
+        timeout: 10 * 1000,
+    },
+
+    fullyParallel: false,
+
+    reporter: [
+        ['list'],
+        ['html', { open: 'never' }]
+    ],
 
     use: {
+        baseURL: 'https://dev.steno.one/',
         trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+        headless: false,
     },
 
     projects: [
+
+        // Step 1: Login once and save authentication state
         {
-            name: 'cases-chrome',
-            testMatch: /04_create_case\.spec\.js/,
-            use: {
-                browserName: 'chromium',
-                headless: false,
-                viewport: null,
-                launchOptions: {
-                    slowMo: 500,
-                    args: ['--start-maximized'],
-                },
-            },
+            name: 'setup',
+            testMatch: /auth\.setup\.js/,
         },
+
+        // Step 2: Reuse saved authentication state
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] }
+            use: {
+                ...devices['Desktop Chrome'],
+                storageState: '.auth/user.json',
+            },
+            dependencies: ['setup'],
         },
-        {
-            name: 'firefox',
-            use: { ...devices['Desktop Firefox'] }
-        },
-        {
-            name: 'webkit',
-            use: { ...devices['Desktop Safari'] }
-        },
+
     ],
+
 });

@@ -12,7 +12,7 @@ test.describe('Module 4: Create Case (TC029 - TC044)', () => {
     let dashboardPage;
     let casesPage;
 
-    const stamp = process.env.TEST_RUN_ID;
+    const stamp = process.env.TEST_RUN_ID || Date.now().toString();
     const caseName = `Case_${stamp}`;
     const caseNumber = `CN-${stamp}`;
     const updatedCaseName = `${caseName}_Updated`;
@@ -159,5 +159,37 @@ test.describe('Module 4: Create Case (TC029 - TC044)', () => {
             await casesPage.search(updatedCaseName);
             await expect(casesPage.rowFor(updatedCaseName)).toBeVisible();
         });
+
+});
+
+       test('TC045: Delete created case', async () => {
+    await casesPage.goto();
+
+    // Search for the updated case
+    await casesPage.search(updatedCaseName);
+
+    const row = page.locator('table tbody tr')
+        .filter({ hasText: updatedCaseName });
+
+    await expect(row).toBeVisible();
+
+    // Click Delete
+    await row.getByRole('button', { name: 'Delete' }).click();
+
+    // Verify confirmation dialog
+    const dialog = page.getByRole('alertdialog');
+    await expect(dialog).toBeVisible();
+
+    // Enter exact case name
+    const confirmationInput = dialog.locator('input');
+    await confirmationInput.fill(updatedCaseName);
+
+    // Confirm deletion
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click();
+
+    // Verify deleted case is no longer visible
+    await expect(row).toHaveCount(0);
     });
 });
+
+
