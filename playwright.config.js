@@ -1,6 +1,9 @@
 
 require('dotenv').config({ override: true });
 
+// Set once in the runner process so restarted workers reuse the same test data names.
+process.env.TEST_RUN_ID ??= String(Date.now());
+
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
@@ -16,6 +19,19 @@ module.exports = defineConfig({
     },
 
     projects: [
+        {
+            name: 'cases-chrome',
+            testMatch: /04_create_case\.spec\.js/,
+            use: {
+                browserName: 'chromium',
+                headless: false,
+                viewport: null,
+                launchOptions: {
+                    slowMo: 500,
+                    args: ['--start-maximized'],
+                },
+            },
+        },
         {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] }
