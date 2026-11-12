@@ -13,8 +13,12 @@ class LoginPage {
     }
 
     // Navigate to login page
-    async navigateToLoginPage() {
-        await this.page.goto('https://dev.steno.one/login');
+   async navigateToLoginPage(url = 'https://dev.steno.one/login') {
+    await this.page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+    });
+}
     }
 
     // Enter email
