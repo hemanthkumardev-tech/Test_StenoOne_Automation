@@ -3,8 +3,12 @@ const LoginPage = require('../pages/Login');
 
 test.describe('Module 1: Login to Website (TC001 - TC008)', () => {
     let loginPage;
-    const validEmail = process.env.STENO_EMAIL || 'saikiran.r@neuranx.ai';
-    const validPassword = process.env.STENO_PASSWORD || 'Saikiran';
+    const validEmail = (process.env.STENO_EMAIL || '').trim();
+    const validPassword = (process.env.STENO_PASSWORD || '').trim();
+
+    if (!validEmail || !validPassword) {
+        throw new Error('STENO_EMAIL and STENO_PASSWORD must be set in the .env file');
+    }
     const loginUrl = process.env.STENO_BASE_URL || 'https://dev.steno.one/login';
 
     test.beforeEach(async ({ page }) => {

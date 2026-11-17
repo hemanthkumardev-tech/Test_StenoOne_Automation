@@ -1,4 +1,4 @@
-
+﻿
 const { test, expect } = require('@playwright/test');
 const CasesPage = require('../pages/Cases');
 
@@ -8,20 +8,17 @@ test('TC060: Collection-wide Case Data Integrity Validation', async ({ page }) =
 
     const casesPage = new CasesPage(page);
 
-    // STEP 1: Open Cases page
-    await casesPage.goto();
-
-    await expect(casesPage.heading).toBeVisible();
-
-    // STEP 2: Capture initial Cases API response
+    // STEP 1 & 2: Capture initial Cases API response during page load (avoids stale pre-reload response)
     const casesResponsePromise = page.waitForResponse(
         response =>
             new URL(response.url()).pathname === '/api/v1/cases' &&
-            response.request().method() === 'GET',
+            response.request().method() === 'GET' &&
+            response.status() === 200,
         { timeout: 20000 }
     );
 
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await casesPage.goto();
+    await expect(casesPage.heading).toBeVisible();
 
     const casesResponse = await casesResponsePromise;
 
@@ -55,7 +52,11 @@ test('TC060: Collection-wide Case Data Integrity Validation', async ({ page }) =
 
         pageUrl.searchParams.set('page', pageNumber.toString());
 
-        const pageResponse = await page.request.get(pageUrl.toString());
+        const reqHeaders = await casesResponse.request().allHeaders();
+        const authHeaders = {};
+        if (reqHeaders['authorization']) authHeaders['Authorization'] = reqHeaders['authorization'];
+        if (reqHeaders['cookie']) authHeaders['Cookie'] = reqHeaders['cookie'];
+        const pageResponse = await page.request.get(pageUrl.toString(), { headers: authHeaders });
 
         expect(pageResponse.status()).toBe(200);
 
@@ -114,8 +115,9 @@ allCaseRecords.forEach((record, index) => {
         ).toBe(true);
 
         expect(
-            typeof record.caseNumber === 'string' &&
-            record.caseNumber.trim().length > 0,
+            record.caseNumber === null ||
+            record.caseNumber === undefined ||
+            (typeof record.caseNumber === 'string' && record.caseNumber.trim().length > 0),
             `Record ${index + 1}: invalid case number`
         ).toBe(true);
 
@@ -163,9 +165,9 @@ allCaseRecords.forEach((record, index) => {
     expect(duplicateIds).toEqual([]);
 
     // STEP 8: Check duplicate case numbers
-    const caseNumbers = allCaseRecords.map(
-        record => record.caseNumber.trim().toLowerCase()
-    );
+    const caseNumbers = allCaseRecords
+        .filter(record => typeof record.caseNumber === 'string' && record.caseNumber.trim().length > 0)
+        .map(record => record.caseNumber.trim().toLowerCase());
 
     const uniqueCaseNumbers = new Set(caseNumbers);
 

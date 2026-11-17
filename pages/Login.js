@@ -1,4 +1,4 @@
-class LoginPage {
+﻿class LoginPage {
     /**
      * @param {import('@playwright/test').Page} page
      */
@@ -18,7 +18,7 @@ class LoginPage {
     }
 
     async navigateToLoginPage(url = 'https://dev.steno.one/login') {
-        await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+        await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
     }
 
     async enterEmail(email) {

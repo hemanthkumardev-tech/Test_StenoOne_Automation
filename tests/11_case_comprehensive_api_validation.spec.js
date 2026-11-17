@@ -1,4 +1,4 @@
-
+﻿
 const { test, expect } = require('@playwright/test');
 const CasesPage = require('../pages/Cases');
 
@@ -75,7 +75,11 @@ test('TC059: Comprehensive Case API Field Validation', async ({ page }) => {
 
         pageUrl.searchParams.set('page', pageNumber.toString());
 
-        const pageResponse = await page.request.get(pageUrl.toString());
+        const reqHeaders = await casesResponse.request().allHeaders();
+        const authHeaders = {};
+        if (reqHeaders['authorization']) authHeaders['Authorization'] = reqHeaders['authorization'];
+        if (reqHeaders['cookie']) authHeaders['Cookie'] = reqHeaders['cookie'];
+        const pageResponse = await page.request.get(pageUrl.toString(), { headers: authHeaders });
 
         expect(pageResponse.status()).toBe(200);
 

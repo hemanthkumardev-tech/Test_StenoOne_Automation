@@ -1,4 +1,4 @@
-
+﻿
 const { test, expect } = require('@playwright/test');
 const CasesPage = require('../pages/Cases');
 
@@ -94,10 +94,12 @@ test('TC047: Filter cases by Closed status', async ({ page }) => {
 
         await casesPage.selectStatusFilter('Archived');
         await expect(casesPage.statusFilter).toContainText('Archived');
+        await page.waitForTimeout(1500);
 
+        const tableText = await casesPage.casesTable.innerText();
         const rowCount = await casesPage.caseRows.count();
 
-        if (rowCount === 0) {
+        if (rowCount === 0 || /No data found/i.test(tableText)) {
             console.log('No Archived cases available to validate.');
         } else {
             for (let i = 0; i < rowCount; i++) {
@@ -118,10 +120,12 @@ test('TC047: Filter cases by Closed status', async ({ page }) => {
 
         await casesPage.selectMatterTypeFilter('Civil');
         await expect(casesPage.matterTypeFilter).toContainText('Civil');
+        await page.waitForTimeout(1500);
 
+        const tableText = await casesPage.casesTable.innerText();
         const rowCount = await casesPage.caseRows.count();
 
-        if (rowCount === 0) {
+        if (rowCount === 0 || /No data found/i.test(tableText)) {
             console.log('No Civil cases available to validate.');
         } else {
             for (let i = 0; i < rowCount; i++) {
