@@ -1,6 +1,6 @@
-
+﻿
 const { test, expect } = require('@playwright/test');
-const LoginPage = require('../pages/LoginPage');
+const LoginPage = require('../pages/Login');
 
 test('Verify session remains active after dashboard refresh', async ({ page }) => {
 

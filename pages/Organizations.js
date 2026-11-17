@@ -1,62 +1,213 @@
-class OrganizationsPage {
+﻿class OrganizationsPage {
     /**
      * @param {import('@playwright/test').Page} page
      */
     constructor(page) {
         this.page = page;
 
-        // Navigation & header
+        // Heading & Navigation
         this.heading = page.getByRole('heading', { name: /Organization/i }).or(page.getByText(/Organization/i)).first();
-        this.createOrgButton = page.getByRole('button', { name: /Create Organization|New Organization|Add Organization/i })
-            .or(page.locator('button:has-text("Create"), button:has-text("New")')).first();
+        this.dashboardHeading = page.getByText('Dashboard', { exact: true }).first();
 
-        // Form fields
-        this.orgNameInput = page.getByLabel(/Organization Name|Name/i).or(page.locator('input[name="name"], input[placeholder*="Organization" i]')).first();
-        this.orgEmailInput = page.getByLabel(/Email/i).or(page.locator('input[type="email"], input[name="email"]')).first();
-        this.saveButton = page.getByRole('button', { name: /Save|Submit|Create/i }).first();
-        this.cancelButton = page.getByRole('button', { name: /Cancel|Close/i }).first();
+        // 7 Tabs in My Organization (/organizations/{id})
+        this.tabOverview = page.getByRole('tab', { name: 'Overview' })
+            .or(page.getByText('Overview', { exact: true })).first();
+        this.tabHierarchy = page.getByRole('tab', { name: 'Hierarchy' })
+            .or(page.getByText('Hierarchy', { exact: true })).first();
+        this.tabSubOrganizations = page.getByRole('tab', { name: 'Sub-Organizations' })
+            .or(page.getByText('Sub-Organizations', { exact: true })).first();
+        this.tabUsers = page.getByRole('tab', { name: 'Users' })
+            .or(page.getByText('Users', { exact: true })).first();
+        this.tabRolesPermissions = page.getByRole('tab', { name: 'Roles & Permissions' })
+            .or(page.getByText('Roles & Permissions', { exact: true })).first();
+        this.tabProductInstances = page.getByRole('tab', { name: 'Product Instances' })
+            .or(page.getByText('Product Instances', { exact: true })).first();
+        this.tabOrganizationSharedData = page.getByRole('tab', { name: 'Organization Shared Data' })
+            .or(page.getByText(/Organization Shared Data|Shared Data/i)).first();
 
-        // Search & table listing
-        this.searchInput = page.getByPlaceholder(/Search/i).or(page.locator('input[type="search"]')).first();
-        this.orgListingTable = page.locator('table, [role="grid"], .org-list, main').first();
-        this.editButton = page.getByRole('button', { name: /Edit/i }).first();
-        this.deleteButton = page.getByRole('button', { name: /Delete|Remove/i }).first();
-        this.confirmDeleteButton = page.getByRole('button', { name: /Confirm|Yes|Delete/i }).last();
+        // Active Dialog
+        this.dialog = page.locator('[role="dialog"]').first();
 
-        // Validation messages
-        this.validationError = page.locator('.error, [role="alert"], .text-destructive, .invalid-feedback').first();
+        // Overview Tab & Edit Modal Locators
+        this.btnEditOrg = page.getByRole('button', { name: 'Edit', exact: true })
+            .or(page.getByText('Edit', { exact: true })).first();
+        this.orgStatusDropdown = page.locator('select[name="status"], [role="combobox"]').first();
+        this.orgWebsiteInput = page.getByLabel(/Website/i).or(page.locator('input[name="website"], input[placeholder*="website" i]')).first();
+        this.orgPhoneInput = page.getByLabel(/Phone/i).or(page.locator('input[type="tel"], input[name="phone"]')).first();
+        this.orgAddressInput = page.getByLabel(/Address/i).or(page.locator('textarea[name="address"], input[name="address"]')).first();
+        this.orgLogoUpload = page.locator('input[type="file"]').first();
+        this.btnSaveOrgEdit = page.getByRole('button', { name: /Save Changes|Save/i }).first();
+        this.btnCancelOrgEdit = page.getByRole('button', { name: /Cancel|Close/i }).first();
+
+        // Hierarchy Tab Locators
+        this.treeRootOrg = page.getByText(/TestOrgDemo/i).first();
+        this.treeSubOrgTeam = page.getByText('Team', { exact: true }).first();
+        this.treeSubOrgDemo = page.getByText('TestOrgDemoSub', { exact: true }).first();
+        this.deptIt = page.getByText('it', { exact: true }).first();
+        this.deptSteno = page.getByText('steno', { exact: true }).first();
+        this.deptTestSubDep1 = page.getByText('TestOrgDemoSub_Dep1', { exact: true }).first();
+
+        // Sub-Organizations Tab Locators
+        this.btnCreateSubOrg = page.getByRole('button', { name: /Create Sub-Org/i })
+            .or(page.getByText(/Create Sub-Org/i)).first();
+        this.subOrgRowTeam = page.getByText('Team', { exact: true }).first();
+        this.subOrgRowDemoSub = page.getByText('TestOrgDemoSub', { exact: true }).first();
+        this.btnAllocateSubOrg = page.getByRole('button', { name: 'Allocate', exact: true })
+            .or(page.getByText('Allocate', { exact: true })).first();
+
+        // Users Tab — Create User & Invite User Locators
+        this.btnCreateUser = page.getByRole('button', { name: 'Create User', exact: true })
+            .or(page.getByText('Create User', { exact: true })).first();
+        this.btnInviteUser = page.getByRole('button', { name: 'Invite User', exact: true })
+            .or(page.getByText('Invite User', { exact: true })).first();
+        this.inputUserDisplayName = this.dialog.getByPlaceholder('John Doe')
+            .or(this.dialog.locator('input[type="text"]').first());
+        this.inputUserEmail = this.dialog.getByPlaceholder('user@example.com')
+            .or(this.dialog.locator('input[type="email"]').first());
+        this.inputUserPassword = this.dialog.getByPlaceholder('••••••••')
+            .or(this.dialog.locator('input[type="password"]').first());
+        this.btnShowPassword = this.dialog.getByRole('button', { name: 'Show password' });
+        this.btnHidePassword = this.dialog.getByRole('button', { name: 'Hide password' });
+        this.roleDropdownTrigger = this.dialog.locator('button[role="combobox"], button:has-text("Select a role")').first();
+        this.btnCancelModal = this.dialog.getByRole('button', { name: 'Cancel', exact: true });
+        this.btnSubmitCreateUser = this.dialog.locator('button[type="submit"]:has-text("Create User")');
+        this.btnSubmitSendInvitation = this.dialog.locator('button[type="submit"]:has-text("Send Invitation")');
+
+        // Roles & Permissions Tab — Create Role & Assign Role Locators
+        this.btnAssignRole = page.getByRole('button', { name: /Assign/i }).or(page.getByText('Assign Role', { exact: false })).first();
+        this.btnCreateRole = page.getByRole('button', { name: 'Create Role', exact: true })
+            .or(page.getByText('Create Role', { exact: true })).first();
+        this.inputRoleName = this.dialog.getByPlaceholder('e.g. Case Manager, Billing Admin')
+            .or(this.dialog.locator('input[type="text"]').first());
+        this.roleTypeDropdownTrigger = this.dialog.locator('button[role="combobox"]').first();
+        this.btnSubmitCreateRole = this.dialog.locator('button[type="submit"]:has-text("Create Role & Assign Permissions")');
+
+        // Product Instances Tab Locators
+        this.rowProductPublish = page.getByText(/Publish/i).first();
+        this.rowProductSyncGen = page.getByText(/Sync Generator/i).first();
+        this.rowProductCapture = page.getByText(/Capture/i).first();
+        this.btnAllocateProductSeats = page.getByRole('button', { name: /Allocate/i }).first();
+
+        // Organization Shared Data Tab Locators
+        this.generalJobsDataCard = page.getByText(/General Jobs Data/i).first();
+        this.emailTemplatesHeader = page.getByText(/Email Templates/i).first();
+        this.fileUploadInput = page.locator('input[type="file"]').first();
     }
 
-    async navigate() {
-        await this.page.goto('https://dev.steno.one/organizations', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    // Tab Navigation Methods
+    async openOverview() {
+        await this.tabOverview.click();
     }
 
-    async openCreateForm() {
-        if (await this.createOrgButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-            await this.createOrgButton.click();
+    async openHierarchy() {
+        await this.tabHierarchy.click();
+    }
+
+    async openSubOrganizations() {
+        await this.tabSubOrganizations.click();
+    }
+
+    async openUsers() {
+        await this.tabUsers.click();
+    }
+
+    async openRolesAndPermissions() {
+        await this.tabRolesPermissions.click();
+    }
+
+    async openProductInstances() {
+        await this.tabProductInstances.click();
+    }
+
+    async openOrganizationSharedData() {
+        if (await this.tabOrganizationSharedData.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await this.tabOrganizationSharedData.click();
+        } else {
+            await this.tabProductInstances.hover().catch(() => {});
+            await this.page.keyboard.press('ArrowRight').catch(() => {});
+            await this.tabOrganizationSharedData.click({ timeout: 5000 }).catch(() => {});
         }
     }
 
-    async fillDetails(name, email = '') {
-        if (name !== undefined) await this.orgNameInput.fill(name);
-        if (email && (await this.orgEmailInput.isVisible().catch(() => false))) {
-            await this.orgEmailInput.fill(email);
+    // Create User Actions
+    async openCreateUserModal() {
+        await this.btnCreateUser.waitFor({ state: 'visible', timeout: 10000 });
+        await this.btnCreateUser.click();
+        await this.dialog.waitFor({ state: 'visible', timeout: 10000 });
+    }
+
+    async selectRoleFromDropdown(roleText = 'Member') {
+        await this.roleDropdownTrigger.scrollIntoViewIfNeeded();
+        await this.roleDropdownTrigger.click();
+        const option = this.page.getByRole('option', { name: new RegExp(roleText, 'i') }).first();
+        await option.waitFor({ state: 'visible', timeout: 5000 });
+        await option.click();
+        // Wait for Radix Select portal to finish closing so the next click is never swallowed
+        await this.page.locator('[role="listbox"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+        await this.page.waitForTimeout(400);
+    }
+
+    async togglePasswordVisibility() {
+        if (await this.btnShowPassword.isVisible().catch(() => false)) {
+            await this.btnShowPassword.click();
+        } else if (await this.btnHidePassword.isVisible().catch(() => false)) {
+            await this.btnHidePassword.click();
         }
     }
 
-    async save() {
-        await this.saveButton.click();
+    async fillCreateUserForm({ displayName, email, password, roleName }) {
+        if (displayName) await this.inputUserDisplayName.fill(displayName);
+        if (email) await this.inputUserEmail.fill(email);
+        if (password) await this.inputUserPassword.fill(password);
+        if (roleName) await this.selectRoleFromDropdown(roleName);
     }
 
-    async cancel() {
-        await this.cancelButton.click();
+    async submitCreateUser() {
+        await this.btnSubmitCreateUser.scrollIntoViewIfNeeded();
+        await this.btnSubmitCreateUser.click();
     }
 
-    async search(term) {
-        if (await this.searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await this.searchInput.fill(term);
-            await this.page.keyboard.press('Enter');
-        }
+    // Invite User Actions
+    async openInviteUserModal() {
+        await this.btnInviteUser.waitFor({ state: 'visible', timeout: 10000 });
+        await this.btnInviteUser.click();
+        await this.dialog.waitFor({ state: 'visible', timeout: 10000 });
+    }
+
+    async fillInviteUserForm({ displayName, email, roleName }) {
+        if (displayName) await this.inputUserDisplayName.fill(displayName);
+        if (email) await this.inputUserEmail.fill(email);
+        if (roleName) await this.selectRoleFromDropdown(roleName);
+    }
+
+    async submitInviteUser() {
+        await this.btnSubmitSendInvitation.scrollIntoViewIfNeeded();
+        await this.btnSubmitSendInvitation.click();
+    }
+
+    // Create Role Actions
+    async openCreateRoleModal() {
+        await this.btnCreateRole.waitFor({ state: 'visible', timeout: 10000 });
+        await this.btnCreateRole.click();
+        await this.dialog.waitFor({ state: 'visible', timeout: 10000 });
+    }
+
+    async selectRoleType(roleType = 'Organization') {
+        await this.roleTypeDropdownTrigger.click();
+        const option = this.page.getByRole('option', { name: new RegExp(`^${roleType}$`, 'i') }).first();
+        await option.waitFor({ state: 'visible', timeout: 5000 });
+        await option.click();
+        await this.page.locator('[role="listbox"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+        await this.page.waitForTimeout(400);
+    }
+
+    async fillCreateRoleForm({ roleName, roleType }) {
+        if (roleName) await this.inputRoleName.fill(roleName);
+        if (roleType) await this.selectRoleType(roleType);
+    }
+
+    async submitCreateRole() {
+        await this.btnSubmitCreateRole.click();
     }
 }
 

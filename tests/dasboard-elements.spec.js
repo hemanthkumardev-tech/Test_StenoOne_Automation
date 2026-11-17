@@ -1,15 +1,20 @@
-
-const { test, expect } = require('@playwright/test');
-const LoginPage = require('../pages/LoginPage');
+﻿const { test, expect } = require('@playwright/test');
+const LoginPage = require('../pages/Login');
 
 test('Verify dashboard elements', async ({ page }) => {
 
     const loginPage = new LoginPage(page);
+    const email = (process.env.STENO_EMAIL || '').trim();
+    const password = (process.env.STENO_PASSWORD || '').trim();
+
+    if (!email || !password) {
+        throw new Error('STENO_EMAIL and STENO_PASSWORD must be set in the .env file');
+    }
 
     // Step 1: Login with valid credentials
     await loginPage.navigateToLoginPage();
-    await loginPage.enterEmail('test@gmail.com');
-    await loginPage.enterPassword('Welcome@123');
+    await loginPage.enterEmail(email);
+    await loginPage.enterPassword(password);
     await loginPage.clickSignIn();
 
     // Step 2: Verify dashboard

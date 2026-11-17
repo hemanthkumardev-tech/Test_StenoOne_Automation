@@ -26,6 +26,9 @@ module.exports = defineConfig({
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
         headless: false,
+        launchOptions: {
+        slowMo: 800
+    },
     },
 
     projects: [
