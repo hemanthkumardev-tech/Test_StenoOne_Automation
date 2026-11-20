@@ -1,4 +1,4 @@
-﻿const { test, expect } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
 const DashboardPage = require('../pages/Dashboard');
 const OrganizationsPage = require('../pages/Organizations');
 
@@ -35,29 +35,93 @@ test.describe('Module 3: Organizations & My Organization (TC015 - TC025)', () =>
         await expect(orgsPage.btnEditOrg).toBeVisible();
     });
 
-    // TC017: Verify Edit Organization dialog fields and status dropdown
     test('TC017: Verify Edit Organization dialog and status options', async ({ page }) => {
+        // Step 1: Open Organization Overview
         await orgsPage.openOverview();
+
+        // Step 2: Click Edit Organization
         await orgsPage.btnEditOrg.click();
 
-        // Verify edit modal opens
-        const modalOrForm = page.locator('[role="dialog"], form').first();
-        await expect(modalOrForm).toBeVisible({ timeout: 10000 });
+        // Step 3: Verify Edit Organization dialog is visible
+        const editDialog = page.getByRole('dialog');
+        await expect(editDialog).toBeVisible({ timeout: 10000 });
 
-        // Verify status dropdown exists
-        const statusField = page.locator('select[name="status"], [role="combobox"]').first();
-        if (await statusField.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await expect(statusField).toBeVisible();
-        }
+        // Step 4: Verify all form fields in Edit Organization
+        const nameInput = editDialog.locator('input').nth(1);
+        await expect(nameInput).toBeVisible();
+        await expect(nameInput).toHaveValue(/TestOrgDemo/i);
 
-        // Close modal
-        if (await orgsPage.btnCancelOrgEdit.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await orgsPage.btnCancelOrgEdit.click();
-        } else {
-            await page.keyboard.press('Escape');
-        }
+        const contactEmailInput = editDialog.locator('input').nth(2);
+        await expect(contactEmailInput).toBeVisible();
+
+        const billingEmailInput = editDialog.locator('input').nth(3);
+        await expect(billingEmailInput).toBeVisible();
+
+        const websiteInput = editDialog.getByPlaceholder('https://acme.com');
+        await expect(websiteInput).toBeVisible();
+
+        const phoneInput = editDialog.getByPlaceholder('+1 555-0100');
+        await expect(phoneInput).toBeVisible();
+
+        const addressInput = editDialog.locator('textarea');
+        await expect(addressInput).toBeVisible();
+
+        const uploadLogoBtn = editDialog.getByRole('button', { name: /Upload logo/i });
+        await expect(uploadLogoBtn).toBeVisible();
+
+        const saveChangesBtn = editDialog.getByRole('button', { name: /Save Changes/i });
+        await expect(saveChangesBtn).toBeVisible();
+
+        // Step 5: Verify Status dropdown options
+        const statusDropdown = editDialog.getByRole('combobox').nth(0);
+        await expect(statusDropdown).toBeVisible();
+
+        await statusDropdown.click();
+        const listbox = page.locator('[role="listbox"]');
+        await expect(listbox).toBeVisible({ timeout: 5000 });
+
+        await expect(page.getByRole('option', { name: 'Active', exact: true })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Deactive', exact: true })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Suspend', exact: true })).toBeVisible();
+
+        // Select the active option to cleanly close dropdown
+        await page.getByRole('option', { name: 'Active', exact: true }).click();
+        await expect(listbox).not.toBeVisible({ timeout: 5000 });
+
+        // Step 6: Verify Time Zone dropdown
+        const timeZoneDropdown = editDialog.getByRole('combobox').nth(1);
+        await timeZoneDropdown.scrollIntoViewIfNeeded();
+
+        // Verify the dropdown is visible and has a selected value
+        await expect(timeZoneDropdown).toBeVisible();
+        const selectedTz = await timeZoneDropdown.innerText();
+        expect(selectedTz.trim().length).toBeGreaterThan(0);
+
+        // Open Time Zone dropdown
+        await timeZoneDropdown.click();
+
+        // Verify dropdown listbox is opened
+        await expect(listbox).toBeVisible({ timeout: 5000 });
+
+        // Verify timezone options are displayed
+        await expect(page.getByRole('option').first()).toBeVisible({ timeout: 5000 });
+        expect(await page.getByRole('option').count()).toBeGreaterThan(50);
+
+        // Close dropdown via Escape
+        await page.keyboard.press('Escape');
+
+        // Verify dropdown is closed
+        await expect(listbox).not.toBeVisible({ timeout: 5000 });
+
+        // Step 7: Verify Cancel/Close button
+        await expect(orgsPage.btnCancelOrgEdit).toBeVisible();
+
+        // Step 8: Close Edit Organization dialog
+        await orgsPage.btnCancelOrgEdit.click();
+
+        // Step 9: Verify dialog is closed
+        await expect(editDialog).not.toBeVisible({ timeout: 5000 });
     });
-
     // TC018: Verify Hierarchy tab tree structure
     test('TC018: Verify Hierarchy tab tree structure', async ({ page }) => {
         await orgsPage.openHierarchy();
@@ -154,7 +218,7 @@ test.describe('Module 3: Organizations & My Organization (TC015 - TC025)', () =>
         // Wait for roles table to load
         const rolesTable = page.locator('table tbody');
         await expect(rolesTable).toBeVisible({ timeout: 15000 });
-        await expect(page.getByText('Loading roles...')).not.toBeVisible({ timeout: 10000 }).catch(() => {});
+        await expect(page.getByText('Loading roles...')).not.toBeVisible({ timeout: 10000 }).catch(() => { });
 
         // Verify standard 8 system roles exist in the table rows
         const roleNames = [
@@ -209,9 +273,12 @@ test.describe('Module 3: Organizations & My Organization (TC015 - TC025)', () =>
     // TC024: Verify Product Instances tab and seat allocation limits
     test('TC024: Verify Product Instances tab and seat allocation limits', async ({ page }) => {
         await orgsPage.openProductInstances();
-        await expect(orgsPage.rowProductPublish).toBeVisible({ timeout: 10000 });
-        await expect(orgsPage.rowProductSyncGen).toBeVisible({ timeout: 10000 });
-        await expect(orgsPage.rowProductCapture).toBeVisible({ timeout: 10000 });
+        await expect(page).toHaveURL(/tab=products/i, { timeout: 10000 });
+        const table = page.locator('table');
+        await expect(table).toBeVisible({ timeout: 15000 });
+        await expect(table.getByText(/Publish/i).first()).toBeVisible({ timeout: 10000 });
+        await expect(table.getByText(/Sync Generator/i).first()).toBeVisible({ timeout: 10000 });
+        await expect(table.getByText(/Capture/i).first()).toBeVisible({ timeout: 10000 });
         await expect(orgsPage.btnAllocateProductSeats).toBeVisible();
     });
 

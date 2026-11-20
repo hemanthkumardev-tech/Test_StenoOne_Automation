@@ -56,11 +56,25 @@
             .getByText('Profile Settings', { exact: true })
             .first();
 
-        // Dashboard Summary Cards
-        this.usersSummaryCard = page.locator('text=/USERS/i').first();
-        this.casesSummaryCard = page.locator('text=/CASES/i').first();
-        this.seatsSummaryCard = page.locator('text=/SEATS/i').first();
-        this.invitesSummaryCard = page.locator('text=/INVITES/i').first();
+        // Dashboard Summary / KPI Cards (real DOM: div.p-6.pt-5.pb-4)
+        this.usersCard = page.locator('div.p-6.pt-5.pb-4').filter({
+            has: page.locator('p', { hasText: /^Users$/i })
+        }).first();
+        this.casesCard = page.locator('div.p-6.pt-5.pb-4').filter({
+            has: page.locator('p', { hasText: /^Cases$/i })
+        }).first();
+        this.seatsCard = page.locator('div.p-6.pt-5.pb-4').filter({
+            has: page.locator('p', { hasText: /^Seats$/i })
+        }).first();
+        this.invitesCard = page.locator('div.p-6.pt-5.pb-4').filter({
+            has: page.locator('p', { hasText: /^Invites$/i })
+        }).first();
+
+        // Backward-compatible summary card aliases
+        this.usersSummaryCard = this.usersCard;
+        this.casesSummaryCard = this.casesCard;
+        this.seatsSummaryCard = this.seatsCard;
+        this.invitesSummaryCard = this.invitesCard;
 
         // Quick Action Buttons
         this.btnNewUser = page.getByRole('button', { name: 'New User', exact: true })
@@ -99,16 +113,72 @@
         this.logoutButton = page.locator('button[title="Logout"]').or(page.getByText(/Log out|Logout|Sign out/i)).first();
     }
 
-    // Navigate to Dashboard
+    // Navigate to Dashboard (retries once if dev.steno.one returns a transient Cloudflare 5xx/522)
     async navigateToDashboard() {
-        await this.page.goto('/', {
-            waitUntil: 'domcontentloaded'
-        });
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                const response = await this.page.goto('/', {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 30000
+                });
+                const status = response ? response.status() : 200;
+                if (status >= 500 && attempt < 2) {
+                    console.log(`Dashboard returned HTTP ${status} (attempt ${attempt}), retrying...`);
+                    await this.page.waitForTimeout(2000);
+                    continue;
+                }
+                await this.dashboardHeading.waitFor({
+                    state: 'visible',
+                    timeout: 20000
+                });
+                return;
+            } catch (err) {
+                if (attempt >= 2) throw err;
+                console.log(`Dashboard load failed on attempt ${attempt}, retrying...`);
+                await this.page.waitForTimeout(2000);
+            }
+        }
+    }
 
-        await this.dashboardHeading.waitFor({
-            state: 'visible',
-            timeout: 15000
-        });
+    // Wait for KPI cards to finish loading numeric values
+    async waitForKpiCardsLoaded() {
+        await this.usersCard.waitFor({ state: 'visible', timeout: 15000 });
+        await this.casesCard.waitFor({ state: 'visible', timeout: 15000 });
+        await this.invitesCard.waitFor({ state: 'visible', timeout: 15000 });
+        await this.usersCard.locator('p.text-3xl').waitFor({ state: 'visible', timeout: 15000 });
+        await this.casesCard.locator('p.text-3xl').waitFor({ state: 'visible', timeout: 15000 });
+        await this.invitesCard.locator('p.text-3xl').waitFor({ state: 'visible', timeout: 15000 });
+    }
+
+    // Read Users KPI card metrics: { active, pending, total, subtitle }
+    async getUsersCardMetrics() {
+        await this.usersCard.locator('p.text-3xl').waitFor({ state: 'visible', timeout: 15000 });
+        const activeText = (await this.usersCard.locator('p.text-3xl').innerText()).trim();
+        const subtitle = (await this.usersCard.locator('p.text-xs').innerText()).trim();
+        const active = parseInt(activeText.replace(/,/g, ''), 10);
+        const pendingMatch = subtitle.match(/(\d+)\s+pending/i);
+        const totalMatch = subtitle.match(/(\d+)\s+total/i);
+        const pending = pendingMatch ? parseInt(pendingMatch[1], 10) : 0;
+        const total = totalMatch ? parseInt(totalMatch[1], 10) : active + pending;
+        return { active, pending, total, subtitle };
+    }
+
+    // Read Cases KPI card metrics: { openCases, subtitle }
+    async getCasesCardMetrics() {
+        await this.casesCard.locator('p.text-3xl').waitFor({ state: 'visible', timeout: 15000 });
+        const countText = (await this.casesCard.locator('p.text-3xl').innerText()).trim();
+        const subtitle = (await this.casesCard.locator('p.text-xs').innerText()).trim();
+        const openCases = parseInt(countText.replace(/,/g, ''), 10);
+        return { openCases, subtitle };
+    }
+
+    // Read Invites KPI card metrics: { pending, subtitle }
+    async getInvitesCardMetrics() {
+        await this.invitesCard.locator('p.text-3xl').waitFor({ state: 'visible', timeout: 15000 });
+        const countText = (await this.invitesCard.locator('p.text-3xl').innerText()).trim();
+        const subtitle = (await this.invitesCard.locator('p.text-xs').innerText()).trim();
+        const pending = parseInt(countText.replace(/,/g, ''), 10);
+        return { pending, subtitle };
     }
 
     // Verify Dashboard heading

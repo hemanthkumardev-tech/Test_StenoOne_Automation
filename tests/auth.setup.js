@@ -1,104 +1,70 @@
-
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
-
 const LoginPage = require('../pages/Login');
 
-test('authenticate once and save session', async ({ page }) => {
+async function performLoginAndSave(browser, email, password, storageFileName) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
     const loginPage = new LoginPage(page);
 
+    console.log(`[AUTH] Initiating authentication for: ${email}`);
+
+    await loginPage.navigateToLoginPage();
+    await expect(loginPage.emailInput).toBeVisible({ timeout: 15000 });
+    await expect(loginPage.passwordInput).toBeVisible({ timeout: 15000 });
+
+    await loginPage.enterEmail(email);
+    await loginPage.enterPassword(password);
+    await loginPage.clickSignIn();
+
+    await Promise.race([
+        page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 20000 }).catch(() => null),
+        loginPage.errorMessage.waitFor({ state: 'visible', timeout: 20000 }).catch(() => null)
+    ]);
+
+    const dashboardVisible = await loginPage.dashboardHeader.isVisible().catch(() => false);
+    console.log(`[AUTH] Dashboard visible for ${email}: ${dashboardVisible}`);
+
+    if (!dashboardVisible) {
+        throw new Error(`Login was not successful for ${email}. Check credentials.`);
+    }
+
+    const authDirectory = path.join(process.cwd(), '.auth');
+    fs.mkdirSync(authDirectory, { recursive: true });
+
+    const targetPath = path.join(authDirectory, storageFileName);
+    await context.storageState({ path: targetPath });
+    console.log(`[AUTH] Authentication state saved to: ${storageFileName}`);
+
+    await context.close();
+}
+
+test('authenticate organization admin and save session', async ({ browser }) => {
+    test.setTimeout(60000);
     const email = (process.env.STENO_EMAIL || '').trim();
     const password = (process.env.STENO_PASSWORD || '').trim();
 
     if (!email || !password) {
-        throw new Error('Email or password missing in .env');
+        throw new Error('STENO_EMAIL or STENO_PASSWORD missing in .env');
     }
 
-    console.log('Email loaded:', Boolean(email));
-    console.log('Password loaded:', Boolean(password));
+    await performLoginAndSave(browser, email, password, 'user.json');
 
-    await loginPage.navigateToLoginPage();
-
-    await expect(loginPage.emailInput).toBeVisible();
-    await expect(loginPage.passwordInput).toBeVisible();
-
-    await loginPage.enterEmail(email);
-    await loginPage.enterPassword(password);
-
-    console.log('Email entered:', await loginPage.emailInput.inputValue() !== '');
-    console.log('Password entered:', await loginPage.passwordInput.inputValue() !== '');
-// Monitor browser console errors
-page.on('console', message => {
-    if (message.type() === 'error') {
-        console.log('BROWSER CONSOLE ERROR:', message.text());
-    }
+    // Also mirror to orgadmin.json for clear semantic multi-role referencing
+    const authDir = path.join(process.cwd(), '.auth');
+    fs.copyFileSync(path.join(authDir, 'user.json'), path.join(authDir, 'orgadmin.json'));
+    console.log('[AUTH] Mirrored session to orgadmin.json successfully.');
 });
 
-// Monitor failed network requests
-page.on('requestfailed', request => {
-    console.log(
-        'FAILED REQUEST:',
-        request.method(),
-        request.url(),
-        request.failure()?.errorText
-    );
-});
+test('authenticate super admin and save session', async ({ browser }) => {
+    test.setTimeout(60000);
+    const email = (process.env.SUPERADMIN_EMAIL || '').trim();
+    const password = (process.env.SUPERADMIN_PASSWORD || '').trim();
 
-// Monitor login-related HTTP responses
-page.on('response', async response => {
-    if (/login|auth|token|session/i.test(response.url())) {
-        console.log(
-            'AUTH RESPONSE:',
-            response.status(),
-            response.url()
-        );
+    if (email && password) {
+        await performLoginAndSave(browser, email, password, 'superadmin.json');
+    } else {
+        console.log('[AUTH] SuperAdmin credentials not configured, skipping superadmin session setup.');
     }
-});
-    await loginPage.clickSignIn();
-
-    // Wait for either successful navigation or a visible login error
-    await Promise.race([
-        page.waitForURL(url => !url.pathname.includes('/login'), {
-            timeout: 20000
-        }).catch(() => null),
-
-        loginPage.errorMessage.waitFor({
-            state: 'visible',
-            timeout: 20000
-        }).catch(() => null)
-    ]);
-
-    console.log('Current URL:', page.url());
-
-    const errorVisible = await loginPage.errorMessage.isVisible().catch(() => false);
-
-    if (errorVisible) {
-        console.log(
-            'Login error:',
-            await loginPage.errorMessage.innerText()
-        );
-    }
-
-    const dashboardVisible = await loginPage.dashboardHeader
-        .isVisible()
-        .catch(() => false);
-
-    console.log('Dashboard visible:', dashboardVisible);
-
-    if (!dashboardVisible) {
-        throw new Error(
-            'Login was not successful. Check the browser and diagnostic output.'
-        );
-    }
-
-    const authDirectory = path.join(process.cwd(), '.auth');
-
-    fs.mkdirSync(authDirectory, { recursive: true });
-
-    await page.context().storageState({
-        path: path.join(authDirectory, 'user.json')
-    });
-
-    console.log('Authentication state saved successfully.');
 });

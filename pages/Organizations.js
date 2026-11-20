@@ -1,4 +1,4 @@
-﻿class OrganizationsPage {
+class OrganizationsPage {
     /**
      * @param {import('@playwright/test').Page} page
      */
@@ -10,20 +10,13 @@
         this.dashboardHeading = page.getByText('Dashboard', { exact: true }).first();
 
         // 7 Tabs in My Organization (/organizations/{id})
-        this.tabOverview = page.getByRole('tab', { name: 'Overview' })
-            .or(page.getByText('Overview', { exact: true })).first();
-        this.tabHierarchy = page.getByRole('tab', { name: 'Hierarchy' })
-            .or(page.getByText('Hierarchy', { exact: true })).first();
-        this.tabSubOrganizations = page.getByRole('tab', { name: 'Sub-Organizations' })
-            .or(page.getByText('Sub-Organizations', { exact: true })).first();
-        this.tabUsers = page.getByRole('tab', { name: 'Users' })
-            .or(page.getByText('Users', { exact: true })).first();
-        this.tabRolesPermissions = page.getByRole('tab', { name: 'Roles & Permissions' })
-            .or(page.getByText('Roles & Permissions', { exact: true })).first();
-        this.tabProductInstances = page.getByRole('tab', { name: 'Product Instances' })
-            .or(page.getByText('Product Instances', { exact: true })).first();
-        this.tabOrganizationSharedData = page.getByRole('tab', { name: 'Organization Shared Data' })
-            .or(page.getByText(/Organization Shared Data|Shared Data/i)).first();
+        this.tabOverview = page.getByRole('tab', { name: 'Overview', exact: true });
+        this.tabHierarchy = page.getByRole('tab', { name: 'Hierarchy', exact: true });
+        this.tabSubOrganizations = page.getByRole('tab', { name: 'Sub-Organizations', exact: true });
+        this.tabUsers = page.getByRole('tab', { name: 'Users', exact: true });
+        this.tabRolesPermissions = page.getByRole('tab', { name: 'Roles & Permissions', exact: true });
+        this.tabProductInstances = page.getByRole('tab', { name: 'Product Instances', exact: true });
+        this.tabOrganizationSharedData = page.getByRole('tab', { name: /Organization Shared Data|Shared Data/i });
 
         // Active Dialog
         this.dialog = page.locator('[role="dialog"]').first();
@@ -37,7 +30,7 @@
         this.orgAddressInput = page.getByLabel(/Address/i).or(page.locator('textarea[name="address"], input[name="address"]')).first();
         this.orgLogoUpload = page.locator('input[type="file"]').first();
         this.btnSaveOrgEdit = page.getByRole('button', { name: /Save Changes|Save/i }).first();
-        this.btnCancelOrgEdit = page.getByRole('button', { name: /Cancel|Close/i }).first();
+        this.btnCancelOrgEdit = this.dialog.getByRole('button', { name: 'Close' });
 
         // Hierarchy Tab Locators
         this.treeRootOrg = page.getByText(/TestOrgDemo/i).first();

@@ -7,10 +7,10 @@ module.exports = defineConfig({
 
     testDir: './tests',
 
-    timeout: 30 * 1000,
+    timeout: 45 * 1000,
 
     expect: {
-        timeout: 10 * 1000,
+        timeout: 12 * 1000,
     },
 
     fullyParallel: false,
@@ -27,8 +27,8 @@ module.exports = defineConfig({
         video: 'retain-on-failure',
         headless: false,
         launchOptions: {
-        slowMo: 800
-    },
+            slowMo: 1000
+        },
     },
 
     projects: [
