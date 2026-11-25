@@ -61,10 +61,10 @@ class OrganizationsPage {
             .or(this.dialog.locator('input[type="password"]').first());
         this.btnShowPassword = this.dialog.getByRole('button', { name: 'Show password' });
         this.btnHidePassword = this.dialog.getByRole('button', { name: 'Hide password' });
-        this.roleDropdownTrigger = this.dialog.locator('button[role="combobox"], button:has-text("Select a role")').first();
+        this.roleDropdownTrigger = this.dialog.getByRole('combobox').first();
         this.btnCancelModal = this.dialog.getByRole('button', { name: 'Cancel', exact: true });
-        this.btnSubmitCreateUser = this.dialog.locator('button[type="submit"]:has-text("Create User")');
-        this.btnSubmitSendInvitation = this.dialog.locator('button[type="submit"]:has-text("Send Invitation")');
+        this.btnSubmitCreateUser = this.dialog.getByRole('button', { name: 'Create User', exact: true }).or(this.dialog.locator('button:has-text("Create User")')).first();
+        this.btnSubmitSendInvitation = this.dialog.getByRole('button', { name: 'Send Invitation', exact: true }).or(this.dialog.locator('button:has-text("Send Invitation")')).first();
 
         // Roles & Permissions Tab — Create Role & Assign Role Locators
         this.btnAssignRole = page.getByRole('button', { name: /Assign/i }).or(page.getByText('Assign Role', { exact: false })).first();
@@ -130,13 +130,18 @@ class OrganizationsPage {
     }
 
     async selectRoleFromDropdown(roleText = 'Member') {
-        await this.roleDropdownTrigger.scrollIntoViewIfNeeded();
-        await this.roleDropdownTrigger.click();
+        const combobox = this.dialog.getByRole('combobox').first();
+        await combobox.scrollIntoViewIfNeeded();
+        await combobox.click();
+
+        const listbox = this.page.locator('[role="listbox"]');
+        await listbox.waitFor({ state: 'visible', timeout: 5000 });
+
         const option = this.page.getByRole('option', { name: new RegExp(roleText, 'i') }).first();
         await option.waitFor({ state: 'visible', timeout: 5000 });
         await option.click();
-        // Wait for Radix Select portal to finish closing so the next click is never swallowed
-        await this.page.locator('[role="listbox"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+
+        await listbox.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
         await this.page.waitForTimeout(400);
     }
 

@@ -36,34 +36,71 @@ class CasesPage {
             has: page.getByRole('heading', { name: 'Create Case' })
         });
 
-        this.caseNameInput = this.createDialog.getByLabel('Case Name');
-        this.descriptionInput = this.createDialog.getByLabel('Description');
-        this.caseNumberInput = this.createDialog.getByLabel('Case Number');
-        this.venueInput = this.createDialog.getByLabel('Venue Location');
+        this.createDialogSubtitle = this.createDialog.getByText(/Enter case basics now/i);
+        this.closeDialogButton = this.createDialog.getByRole('button', {
+            name: 'Close',
+            exact: true
+        });
 
+        // Basic details
+        this.caseNameInput = this.createDialog.getByLabel(/Case Name/i)
+            .or(this.createDialog.getByPlaceholder('e.g., Smith v. Acme Corp'));
+        this.descriptionInput = this.createDialog.getByLabel(/Description/i)
+            .or(this.createDialog.getByPlaceholder('Brief summary of the case'));
+        this.caseNumberInput = this.createDialog.getByLabel(/Case Number/i)
+            .or(this.createDialog.getByPlaceholder('e.g., 2026-CV-1142'));
+        this.venueInput = this.createDialog.getByLabel(/Venue Location/i)
+            .or(this.createDialog.getByPlaceholder('e.g., State of California'));
+
+        // Product selection
         this.productSelect = this.createDialog.getByRole('combobox', {
             name: 'Product'
-        });
+        }).or(this.createDialog.locator('button[role="combobox"]').filter({ hasText: /Select a product instance|Publish|Sync Generator|Capture/i })).first();
 
+        // Ownership selection
+        this.ownerSelect = this.createDialog.getByRole('combobox', {
+            name: 'Owner'
+        }).or(this.createDialog.locator('button[role="combobox"]').filter({ hasText: /Organization|Sub-Organization|Department/i })).first();
+
+        // Matter details
         this.matterDetailsToggle = this.createDialog.getByRole('button', {
             name: 'Matter details (optional)'
-        });
+        }).or(this.createDialog.getByText('Matter details (optional)')).first();
+
+        this.courtJurisdictionInput = this.createDialog.getByLabel(/Court \/ Jurisdiction/i)
+            .or(this.createDialog.getByPlaceholder('e.g., Superior Court of Cook County'));
 
         this.matterTypeSelect = this.createDialog.getByRole('combobox', {
             name: 'Matter Type'
-        });
+        }).or(this.createDialog.locator('button[role="combobox"]').filter({ hasText: /Select type|Civil|Criminal|Deposition|Arbitration|Other/i })).first();
+
+        // Additional details
+        this.clientFirmInput = this.createDialog.getByLabel(/Client \/ Firm/i)
+            .or(this.createDialog.locator('input').filter({ has: page.locator('xpath=preceding-sibling::label[contains(text(), "Client")]') }))
+            .or(this.createDialog.locator('div:has-text("Client / Firm") > input')).first();
+
+        this.opposingPartyInput = this.createDialog.getByLabel(/Opposing Party/i)
+            .or(this.createDialog.locator('input').filter({ has: page.locator('xpath=preceding-sibling::label[contains(text(), "Opposing")]') }))
+            .or(this.createDialog.locator('div:has-text("Opposing Party") > input')).first();
 
         this.hearingDateInput = this.createDialog.getByLabel(
             'Hearing / Deposition Date'
-        );
+        ).or(this.createDialog.locator('input[type="date"], input[placeholder*="yyyy" i], input[placeholder*="mm/dd" i]'));
 
+        // Actions
         this.createCaseButton = this.createDialog.getByRole('button', {
             name: 'Create Case',
             exact: true
         });
 
+        this.createAndOpenButton = this.createDialog.getByRole('button', {
+            name: 'Create & Open',
+            exact: true
+        });
+
         this.cancelButton = this.createDialog.getByRole('button', {
-            name: 'Cancel'
+            name: 'Cancel',
+            exact: true
         });
 
         this.duplicateNameError = this.createDialog.getByText(
@@ -74,8 +111,26 @@ class CasesPage {
         this.editDialog = page.getByRole('dialog').filter({
             has: page.getByRole('heading', { name: 'Edit Case' })
         });
+        this.editDialogHeading = this.editDialog.getByRole('heading', { name: 'Edit Case' });
+        this.editCloseButton = this.editDialog.getByRole('button', { name: 'Close', exact: true });
 
-        this.editCaseNameInput = this.editDialog.getByRole('textbox').first();
+        // Edit form fields
+        this.editCaseNameInput = this.editDialog.getByRole('textbox').nth(0);
+        this.editCaseNumberInput = this.editDialog.getByRole('textbox').nth(1);
+        this.editVenueInput = this.editDialog.getByRole('textbox').nth(2);
+        this.editDescriptionInput = this.editDialog.getByRole('textbox').nth(3);
+
+        // Edit Status dropdown
+        this.editStatusSelect = this.editDialog.getByRole('combobox').nth(0);
+
+        this.editCourtJurisdictionInput = this.editDialog.getByRole('textbox').nth(4);
+
+        // Edit Matter Type dropdown
+        this.editMatterTypeSelect = this.editDialog.getByRole('combobox').nth(1);
+
+        this.editClientFirmInput = this.editDialog.getByRole('textbox').nth(5);
+        this.editOpposingPartyInput = this.editDialog.getByRole('textbox').nth(6);
+        this.editHearingDateInput = this.editDialog.getByRole('textbox').nth(7);
 
         this.saveChangesButton = this.editDialog.getByRole('button', {
             name: 'Save Changes'
@@ -102,7 +157,13 @@ class CasesPage {
         description,
         number,
         venue,
-        product
+        product,
+        owner,
+        court,
+        matterType,
+        clientFirm,
+        opposingParty,
+        hearingDate
     } = {}) {
         if (name !== undefined) {
             await this.caseNameInput.fill(name);
@@ -123,6 +184,34 @@ class CasesPage {
         if (product !== undefined) {
             await this.selectProduct(product);
         }
+
+        if (owner !== undefined) {
+            await this.selectOwner(owner);
+        }
+
+        if (court !== undefined || matterType !== undefined || clientFirm !== undefined || opposingParty !== undefined || hearingDate !== undefined) {
+            await this.expandMatterDetails();
+
+            if (court !== undefined) {
+                await this.courtJurisdictionInput.fill(court);
+            }
+
+            if (matterType !== undefined) {
+                await this.selectMatterType(matterType);
+            }
+
+            if (clientFirm !== undefined) {
+                await this.clientFirmInput.fill(clientFirm);
+            }
+
+            if (opposingParty !== undefined) {
+                await this.opposingPartyInput.fill(opposingParty);
+            }
+
+            if (hearingDate !== undefined) {
+                await this.hearingDateInput.fill(hearingDate);
+            }
+        }
     }
 
     // Select Product in Create Case dialog
@@ -131,6 +220,16 @@ class CasesPage {
 
         await this.page.getByRole('option', {
             name: product
+        }).click();
+    }
+
+    // Select Owner in Create Case dialog
+    async selectOwner(owner) {
+        await this.ownerSelect.click();
+
+        await this.page.getByRole('option', {
+            name: owner,
+            exact: true
         }).click();
     }
 
@@ -159,6 +258,14 @@ class CasesPage {
         await this.createCaseButton.click();
     }
 
+    async submitCreateAndOpen() {
+        await this.createAndOpenButton.click();
+    }
+
+    async closeCreateDialog() {
+        await this.closeDialogButton.click();
+    }
+
     async cancel() {
         await this.cancelButton.click();
     }
@@ -180,12 +287,32 @@ class CasesPage {
         }).click();
     }
 
-    async editCaseName(currentName, newName) {
-        await this.rowFor(currentName).getByRole('button', {
+    async openEditCaseForm(name) {
+        await this.rowFor(name).getByRole('button', {
             name: 'Edit'
-        }).click();
+        }).or(this.rowFor(name).locator('button').first()).click();
 
         await this.editDialog.waitFor();
+    }
+
+    async selectEditStatus(status) {
+        await this.editStatusSelect.click();
+        await this.page.getByRole('option', {
+            name: status,
+            exact: true
+        }).click();
+    }
+
+    async selectEditMatterType(type) {
+        await this.editMatterTypeSelect.click();
+        await this.page.getByRole('option', {
+            name: type,
+            exact: true
+        }).click();
+    }
+
+    async editCaseName(currentName, newName) {
+        await this.openEditCaseForm(currentName);
 
         await this.editCaseNameInput.fill(newName);
 

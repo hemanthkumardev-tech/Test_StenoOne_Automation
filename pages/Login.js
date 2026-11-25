@@ -1,4 +1,4 @@
-﻿class LoginPage {
+class LoginPage {
     /**
      * @param {import('@playwright/test').Page} page
      */
@@ -18,7 +18,24 @@
     }
 
     async navigateToLoginPage(url = 'https://dev.steno.one/login') {
-        await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const response = await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+                const status = response ? response.status() : 200;
+                const isCloudflareError = await this.page.locator('text=/Error code 52[0-9]|Connection timed out|Bad gateway/i').isVisible({ timeout: 1500 }).catch(() => false);
+                if ((status >= 500 || isCloudflareError) && attempt < 3) {
+                    console.log(`Login page returned HTTP ${status} / Cloudflare error on attempt ${attempt}, retrying in 3s...`);
+                    await this.page.waitForTimeout(3000);
+                    continue;
+                }
+                await this.emailInput.waitFor({ state: 'visible', timeout: 20000 });
+                return;
+            } catch (err) {
+                if (attempt >= 3) throw err;
+                console.log(`Login navigation attempt ${attempt} failed, retrying in 3s...`);
+                await this.page.waitForTimeout(3000);
+            }
+        }
     }
 
     async enterEmail(email) {

@@ -155,7 +155,7 @@ test.describe('Module 3: Organizations & My Organization (TC015 - TC025)', () =>
         await expect(orgsPage.dialog.getByText('At least one number')).toBeVisible();
         await expect(orgsPage.dialog.getByText('At least one special character')).toBeVisible();
         await expect(orgsPage.dialog.getByText('No spaces')).toBeVisible();
-        await expect(orgsPage.dialog.getByText('TestOrgDemo')).toBeVisible();
+        await expect(orgsPage.dialog.getByText('TestOrgDemo', { exact: true }).first()).toBeVisible();
 
         // Fill display name, email, and valid strong password
         await orgsPage.inputUserDisplayName.fill(displayName);
@@ -194,7 +194,7 @@ test.describe('Module 3: Organizations & My Organization (TC015 - TC025)', () =>
 
         // Verify Invite User modal elements
         await expect(orgsPage.dialog.getByText('Invite User', { exact: true }).first()).toBeVisible();
-        await expect(orgsPage.dialog.getByText('TestOrgDemo')).toBeVisible();
+        await expect(orgsPage.dialog.getByText('TestOrgDemo', { exact: true }).first()).toBeVisible();
 
         // Fill form and select role
         await orgsPage.fillInviteUserForm({

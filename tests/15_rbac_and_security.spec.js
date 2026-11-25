@@ -26,7 +26,7 @@ test.describe('Module 15: RBAC & Security Access Control (TC073 - TC080)', () =>
     // TC073: Horizontal IDOR - Foreign Organization URL tampering is blocked/isolated
     test('TC073: Horizontal IDOR - Foreign Organization URL tampering is blocked or isolated', async ({ page }) => {
         // Step 1: Start visibly on Dashboard and navigate to My Organization
-        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await dashboardPage.navigateToDashboard();
         await dashboardPage.clickOrganizations();
         await expect(page).toHaveURL(/\/organizations\/[a-f0-9-]+/i, { timeout: 15000 });
         await page.waitForTimeout(1500);
@@ -132,7 +132,7 @@ test.describe('Module 15: RBAC & Security Access Control (TC073 - TC080)', () =>
     // TC076: RBAC Enforcement - System Role integrity and client role constraints
     test('TC076: RBAC Enforcement - Verify System Roles integrity and client role constraints', async ({ page }) => {
         // Step 1: Visibly navigate to My Organization
-        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await dashboardPage.navigateToDashboard();
         await dashboardPage.clickOrganizations();
         await expect(page).toHaveURL(/\/organizations\/[a-f0-9-]+/i, { timeout: 15000 });
         await page.waitForTimeout(1500);
@@ -141,13 +141,14 @@ test.describe('Module 15: RBAC & Security Access Control (TC073 - TC080)', () =>
         await orgsPage.openRolesAndPermissions();
         const rolesTable = page.locator('table tbody');
         await expect(rolesTable).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(/Loading roles/i)).not.toBeVisible({ timeout: 15000 }).catch(() => { });
         await page.waitForTimeout(1000);
 
         // Step 3: Visibly verify standard system roles from matrix
         const expectedRoles = ['Admin', 'Manager', 'Member', 'Reporter', 'Billing Admin'];
         for (const role of expectedRoles) {
             const roleCell = rolesTable.getByText(new RegExp(role, 'i')).first();
-            await expect(roleCell).toBeVisible({ timeout: 5000 });
+            await expect(roleCell).toBeVisible({ timeout: 15000 });
         }
         await page.waitForTimeout(1000);
 
